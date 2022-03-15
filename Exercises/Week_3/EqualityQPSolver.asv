@@ -1,0 +1,10 @@
+function [x,lambda] = EqualityQPSolver(H,g,A,b)
+
+[m, n] = size(A);
+
+x = zeros(n,1);
+lambda = zeros(m,1);
+temp = [H -A'; -A zeros(m)];
+g_b_vec = -[g; b];
+
+sol_vec = temp\g_b_vec;
