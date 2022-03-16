@@ -90,4 +90,4 @@ A = [1 -2; -1 -2; -1 2; 1 0; 0 1];
 b = [-2; -6; -2; 0; 0];
 x0 = [2; 0];
 
-[x, lambda] = ActiveSetTheoretical(H,g,-A',b,x0);
+[x, lambda] = ActiveSetTheoretical(H,g,A',b,x0);
