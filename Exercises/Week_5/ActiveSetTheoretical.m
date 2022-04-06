@@ -13,7 +13,6 @@ cnt = 1;
 alpha = 0;
 p = 0;
 x = x + alpha*p;
-[n,m] = size(A);
 NW = [A(:,1) A(:,2) A(:,4)];
 b_nws = [b(1); b(2); b(4)];
 
@@ -22,7 +21,7 @@ while done == false
     % Try a new solution
     gk = H*x + g;
     [p, lambda] = ConvexEqSolver(H,gk,W,b_ws);
-    [n,m] = size(W);
+    [~,m] = size(W);
     if norm(p,2) == 0
         
         % Check optimality
@@ -35,7 +34,7 @@ while done == false
         
         if done == false
             % Remove something from the working set
-            [cut, index] = min(lambda);
+            [~, index] = min(lambda);
             
             NW = [NW W(:,index)];
             b_nws = [b_nws; b(index)];
@@ -59,7 +58,7 @@ while done == false
         
         if alpha < 1
             % Add to the working set
-            [n,m] = size(NW);
+            [~,m] = size(NW);
             x = x + alpha*p;
             W = [W NW(:,index(1))];
             b_ws = [b_ws; b_nws(index(1))];
