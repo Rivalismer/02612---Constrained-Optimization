@@ -1,8 +1,6 @@
 function [x,lambda] = EqualityQPSolverNullSpace(H,g,A,b)
 
 [n,~] = size(A);
-x = zeros(n+1,1);
-lambda = zeros(n,1);
 
 [Q,Rbar] = qr(A);
 m1 = size(Rbar,2);

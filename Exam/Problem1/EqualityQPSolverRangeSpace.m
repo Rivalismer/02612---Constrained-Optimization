@@ -1,15 +1,10 @@
 function [x, lambda] = EqualityQPSolverRangeSpace(H,g,A,b)
 
-[n,~] = size(A);
-
-x = zeros(n+1,1);
-lambda = zeros(n,1);
-
 [L, info] = chol(H,'lower');
 
 if info == 0
-    v = L'\L\(g);
-    Ha = A'*(L*L')*A;
+    v = L'\(L\g);
+    Ha = A'*inv((L*L'))*A;
     lambda = Ha\(b + A'*v);
     x = (L*L')\(A*lambda - g);
     
