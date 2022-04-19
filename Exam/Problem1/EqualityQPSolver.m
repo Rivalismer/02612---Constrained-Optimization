@@ -21,6 +21,6 @@ switch solver
 
     otherwise
         fprintf("Unknown solver");
-        x = nan;
-        lambda = nan;
+        x = [];
+        lambda = [];
 end

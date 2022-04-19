@@ -20,5 +20,5 @@ A = [16.1, 1
 b = [15
     1];
 
-[x, lambda] = EqualityQPSolver(H,g,A,b,'RangeSpace');
+[x, lambda] = EqualityQPSolver(H,g,A,b,'LDLDense');
 
