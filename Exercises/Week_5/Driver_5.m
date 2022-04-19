@@ -1,7 +1,7 @@
 %% Variables
 d0 = 1;
 ubar = 0.2;
-n = 1000;
+n = 10;
 
 %% Task 1.3
 [H,g,A,b] = CreateQP(n,ubar,d0);

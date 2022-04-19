@@ -1,0 +1,18 @@
+function [x,lambda] = EqualityQPSolver(H,g,A,b,solver)
+
+[n,m] = size(A);
+KKT = [H, -A'; A, zeros(m)];
+
+switch solver
+    case 'LUSparse'
+        [x,lambda] = EqualityQPSolverLUSparse(KKT,g,b,n);
+   
+    case 'LUDense'
+        [x,lambda] = EqualityQPSolverLUDense(KKT,g,b,n);
+
+    case 'LDLSparse'
+        [x,lambda] = EqualityQPSolverLDLSparse
+    case 'LDLDense'
+    case 'NullSpace'
+    case 'RangeSpace'
+end
