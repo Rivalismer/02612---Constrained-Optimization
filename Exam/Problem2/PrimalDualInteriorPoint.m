@@ -1,0 +1,144 @@
+function [x,lambda, Z] = PrimalDualInteriorPoint(H,g,A,b, C, d, x0 ,...
+    lambda0, s0, z0)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This function solves problems on the form
+%   Insert form
+% It requires an input of
+% H - Hessian
+% g - 
+% A -
+% b -
+% C - 
+% d - 
+% lambda0 - The initial lagrange multipliers for EQ-constraints
+% z0 - The initial lagrange multipliers for IEQ-constraints
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Initialisations
+maxit = 50;
+it = 0;
+tol = 1.0e-5;
+Z = diag(z0);
+S = diag(s0);
+x = x0;
+lambda = lambda0;
+m_c = length(s0);
+[m,n] = size(A);
+%dim = length(H) + m - n;
+solutions = zeros(n + m, 1);
+e = ones(length(S), 1);
+etta = 0.995;
+
+% Computing residuals
+r_L = H*x + g - A*lambda - C*z0;
+r_A = b - A'*x;
+r_C = s0 + d - C'*x;
+r_sz = S*Z*e;
+
+% LDL factorization of modified KKT system
+H_bar = H + C*(S\Z)*C';
+KKT = [H_bar -A; -A' zeros(n)];
+[L,D,p] = ldl(KKT,'lower', 'vector');
+
+% Compute affine direction
+r_L_bar = r_L - C*(S\Z)*(r_C - Z\r_sz);
+rhs = -[r_L_bar; r_A];
+solutions(p) = L'\(D\(L\rhs(p)));
+
+dx_aff = solutions(1:m);
+%dl_aff = solutions((m + 1):(n + m));
+
+dz_aff = -(S\Z)*C'*dx_aff + (S\Z)*(r_C - Z\r_sz);
+ds_aff = -Z\r_sz - Z\S*dz_aff;
+
+% Get initial point
+z = max(ones(length(z0),1), abs(z0 + dz_aff));
+s = max(ones(length(s0),1), abs(s0 + ds_aff));
+
+Z = diag(z);
+S = diag(s);
+
+% Check convergence conditions
+r_L = H*x + g - A*lambda - C*z;
+r_A = b - A'*x;
+r_C = s + d - C'*x;
+r_sz = S*Z*e;
+mu0 = (z'*s)/m_c;
+mu = mu0;
+
+done = ((norm(r_L,'inf') <= tol*max(1,norm([H g A C], 'inf'))) && ...
+    (norm(r_A,'inf') <= tol*max(1,norm([A' b], 'inf'))) && ...
+    (norm(r_C, 'inf') <= tol*max(1,norm([eye(length(d)) d C'], 'inf'))) && ...
+    (mu <= tol*mu0*1.0e-2));
+
+%% Main loop
+while ~done && it <= maxit
+    % LDL factorization of modified KKT system
+    H_bar = H + C*(S\Z)*C';
+    KKT = [H_bar -A; -A' zeros(n)];
+    [L,D,p] = ldl(KKT,'lower', 'vector');
+    
+    % Compute affine direction
+    r_L_bar = r_L - C*(S\Z)*(r_C - Z\r_sz);
+    rhs = -[r_L_bar; r_A];
+    solutions(p) = L'\(D\(L\rhs(p)));
+    
+    dx_aff = solutions(1:m);
+    %dl_aff = solutions((m + 1):(n + m));
+    
+    dz_aff = -(S\Z)*C'*dx_aff + (S\Z)*(r_C - Z\r_sz);
+    ds_aff = -Z\r_sz - Z\S*dz_aff;
+    
+    % Compute alpha_aff
+    comp_alpha = @(alpha_aff) - alpha_aff;
+    A_aff = -[dz_aff; ds_aff];
+    b_aff = [z;s];
+    alpha_aff = fmincon(comp_alpha, 1, A_aff, b_aff);
+    
+    % Duality gap and centering parameter
+    mu_aff = (z + alpha_aff*dz_aff)'*(s + alpha_aff*ds_aff)/m_c;
+    rho = (mu_aff / mu).^3;
+
+    % Affine-Centering-Correction Direction
+    r_sz_bar = r_sz + ds_aff*dz_aff*e - rho*mu*e;
+    r_L_bar = r_L - C*(S\Z)*(r_C - Z\r_sz_bar);
+
+    rhs = -[r_L_bar; r_A];
+    solutions(p) = L'\(D\(L\rhs(p)));
+    dx = solutions(1:m);
+    dl = solutions((m + 1):(n + m));
+
+    dz = -(S\Z)*C'*dx + (S\Z)*(r_C - Z\r_sz_bar);
+    ds = -Z\r_sz_bar - Z\S*dz;
+
+    % Compute alpha
+    A_alpha = -[dz; ds];
+    b_alpha = [z;s];
+    alpha = fmincon(comp_alpha, 1, A_alpha, b_alpha);
+
+    % Update iteration
+    alpha_bar = etta*alpha;
+    x = x + alpha_bar*dx;
+    lambda = lambda + alpha_bar*dl;
+    z = alpha_bar*dz;
+    s = s + alpha_bar*ds;
+
+    % Compute residuals
+    r_L = H*x + g - A*lambda - C*z;
+    r_A = b - A'*x;
+    r_C = s + d - C'*x;
+    r_sz = S*Z*e;
+    mu = (z'*s)/m_c;
+
+    % Check convergence
+    done = ((norm(r_L,'inf') <= tol*max(1,norm([H g A C], 'inf'))) && ...
+    (norm(r_A,'inf') <= tol*max(1,norm([A' b], 'inf'))) && ...
+    (norm(r_C, 'inf') <= tol*max(1,norm([eye(length(d)) d C'], 'inf'))) && ...
+    (mu <= tol*mu0*1.0e-2));
+    it = it + 1;
+end
+
+if it > maxit
+    printf("Ran out of iterations")
+end

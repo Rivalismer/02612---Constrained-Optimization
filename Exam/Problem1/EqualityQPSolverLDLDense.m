@@ -19,7 +19,7 @@ KKT = [H, -A; -A', zeros(m)];
 z = zeros(n+m, 1);
 rhs = -[g;b];
 
-% Conpute solution
+% Compute solution
 [L,D,p] = ldl(KKT,'lower','vector');
 z(p) = L'\(D\(L\rhs(p))); % Back-substitution matching the pivots
 
