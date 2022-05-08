@@ -1,144 +1,168 @@
-function [x,lambda, Z] = PrimalDualInteriorPoint(H,g,A,b, C, d, x0 ,...
-    lambda0, s0, z0)
+function [x, iter, converged] = PrimalDualInteriorPoint(x0, y0, s0, z0, H, g, A, b, l, u)
+%{
+    This function is designed to solve quadratic programming minimization 
+    problems wrt. x vector in form of:
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This function solves problems on the form
-%   Insert form
-% It requires an input of
-% H - Hessian
-% g - 
-% A -
-% b -
-% C - 
-% d - 
-% lambda0 - The initial lagrange multipliers for EQ-constraints
-% z0 - The initial lagrange multipliers for IEQ-constraints
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    min f(x) = 1/2 x'Hx + g'x
 
-% Initialisations
-maxit = 50;
-it = 0;
-tol = 1.0e-5;
-Z = diag(z0);
+    s.t      = A'x = b
+               l <= x <= u
+    
+    Output:
+            -- x         - reached optimal value of x
+            -- iter      - number of iterations computed
+            -- converged - 1 if algorithm did converge, 0 otherwise
+%}
+
+% Solver settings
+max_iter = 100;         % Maximal iteration
+tol = 1e-5;             % Allowed tolerance
+eta = 0.995;             % Alpha correction parameter for iteration updates
+% Not display linprog solver options
+options = optimoptions('linprog','Display','off');   
+
+% Setting initial number of iterations
+iter = 0;
+
+%% Initialization:
+
+% Converting lower and upper boundaries to non-equality constraint in form Cx >= d
+
+C = [diag(ones(1, length(x0))), diag(-ones(1, length(x0)))];
+d = [l; -u];
+
+% Preparing mc, S, Z, and e matrices and vectors
+mc = length(s0);
 S = diag(s0);
+Z = diag(z0);
+e = ones(mc, 1);
+
+% Assigning variables from input
 x = x0;
-lambda = lambda0;
-m_c = length(s0);
-[m,n] = size(A);
-%dim = length(H) + m - n;
-solutions = zeros(n + m, 1);
-e = ones(length(S), 1);
-etta = 0.995;
+y = y0;
+s = s0;
+z = z0;
 
-% Computing residuals
-r_L = H*x + g - A*lambda - C*z0;
-r_A = b - A'*x;
-r_C = s0 + d - C'*x;
-r_sz = S*Z*e;
+% Computing initial residuals
+rL = H*x + g - A*y - C*z;
+rA = b - A'*x;
+rC = s + d - C'*x;
+rSZ = S*Z*e;
+mu = z'*s/mc;
 
-% LDL factorization of modified KKT system
-H_bar = H + C*(S\Z)*C';
-KKT = [H_bar -A; -A' zeros(n)];
-[L,D,p] = ldl(KKT,'lower', 'vector');
+%% Initial point
 
-% Compute affine direction
-r_L_bar = r_L - C*(S\Z)*(r_C - Z\r_sz);
-rhs = -[r_L_bar; r_A];
-solutions(p) = L'\(D\(L\rhs(p)));
+% LDL factorization of transformed KKT conditions and its preparation
+[n, m] = size(A);
+Hhat = H + C*(inv(S)*Z)*C';
+KKT = [Hhat, -A; -A', zeros(m, m)];
+[L, D, p] = ldl(KKT, 'lower', 'vector');
 
-dx_aff = solutions(1:m);
-%dl_aff = solutions((m + 1):(n + m));
+% Computation of initial affine direction
+rLhat = rL - C*(inv(S)*Z)*(rC-inv(Z)*rSZ);
+rs = -[rLhat; rA];
+aff(p) = L'\(D\(L\rs(p)));
+dxaff = (aff(1:length(x0)))';
+dyaff = (aff(length(x0)+1:end))';
+dzaff = -(inv(S)*Z)*C'*dxaff + (inv(S)*Z)*(rC - inv(Z)*rSZ);
+dsaff = -inv(Z)*rSZ - inv(Z)*S*dzaff;
 
-dz_aff = -(S\Z)*C'*dx_aff + (S\Z)*(r_C - Z\r_sz);
-ds_aff = -Z\r_sz - Z\S*dz_aff;
+% Initial z and s vectors
+z = max(1, abs(z + dzaff));
+s = max(1, abs(s + dsaff));
 
-% Get initial point
-z = max(ones(length(z0),1), abs(z0 + dz_aff));
-s = max(ones(length(s0),1), abs(s0 + ds_aff));
+%% Stopping criteria 
 
-Z = diag(z);
+% Calculation of new S and Z matrices
 S = diag(s);
+Z = diag(z);
 
-% Check convergence conditions
-r_L = H*x + g - A*lambda - C*z;
-r_A = b - A'*x;
-r_C = s + d - C'*x;
-r_sz = S*Z*e;
-mu0 = (z'*s)/m_c;
-mu = mu0;
+% Residuals estimation
+rL = H*x + g - A*y - C*z;
+rA = -A'*x + b;
+rC = -C'*x + s + d;
+rSZ = S*Z*e;
+mu0 = mu;
+mu = z'*s/mc;
 
-done = ((norm(r_L,'inf') <= tol*max(1,norm([H g A C], 'inf'))) && ...
-    (norm(r_A,'inf') <= tol*max(1,norm([A' b], 'inf'))) && ...
-    (norm(r_C, 'inf') <= tol*max(1,norm([eye(length(d)) d C'], 'inf'))) && ...
-    (mu <= tol*mu0*1.0e-2));
-
+% Checking if algorithm has already converged, without need of entering
+% main loop, by comparing residuals to set tolerance
+converged = (norm(rL, 'inf') <= tol * max(1, norm([H, g, A, C], 'inf'))) & ...
+            (norm(rA, 'inf') <= tol * max(1, norm([A', b], 'inf'))) & ...
+            (norm(rC, 'inf') <= tol * max(1, norm([eye(length(d)), d, C'], 'inf'))) & ...
+            (mu <= tol * 10^(-2) * mu0);
+         
 %% Main loop
-while ~done && it <= maxit
-    % LDL factorization of modified KKT system
-    H_bar = H + C*(S\Z)*C';
-    KKT = [H_bar -A; -A' zeros(n)];
-    [L,D,p] = ldl(KKT,'lower', 'vector');
+
+while ~converged && (iter < max_iter)
     
-    % Compute affine direction
-    r_L_bar = r_L - C*(S\Z)*(r_C - Z\r_sz);
-    rhs = -[r_L_bar; r_A];
-    solutions(p) = L'\(D\(L\rhs(p)));
+    % Iteration number
+    iter = iter + 1;
     
-    dx_aff = solutions(1:m);
-    %dl_aff = solutions((m + 1):(n + m));
+    % Main loop LDL factorization of modified KKT conditions
+    Hhat = H + C*(inv(S)*Z)*C';
+    KKT = [Hhat, -A; -A', zeros(m, m)];
+    [L, D, p] = ldl(KKT, 'lower', 'vector');
     
-    dz_aff = -(S\Z)*C'*dx_aff + (S\Z)*(r_C - Z\r_sz);
-    ds_aff = -Z\r_sz - Z\S*dz_aff;
+    % Main loop affine direction 
+    rLhat = rL - C*(inv(S)*Z)*(rC-inv(Z)*rSZ);
+    rs = -[rLhat; rA];
+    aff(p) = L'\(D\(L\rs(p)));
+    dxaff = (aff(1:length(x0)))';
+    dyaff = (aff(length(x0)+1:end))';
+    dzaff = -(inv(S)*Z)*C'*dxaff + (inv(S)*Z)*(rC - inv(Z)*rSZ);
+    dsaff = -inv(Z)*rSZ - inv(Z)*S*dzaff;
     
-    % Compute alpha_aff
-    comp_alpha = @(alpha_aff) - alpha_aff;
-    A_aff = -[dz_aff; ds_aff];
-    b_aff = [z;s];
-    alpha_aff = fmincon(comp_alpha, 1, A_aff, b_aff);
+    % Calculating largest alpha for duality gap and centering parameter 
+    Aalph = -[dzaff; dsaff];
+    balph = [z; s];
+    alpha = linprog(-1, Aalph, balph, [], [], [], [], options);
     
-    % Duality gap and centering parameter
-    mu_aff = (z + alpha_aff*dz_aff)'*(s + alpha_aff*ds_aff)/m_c;
-    rho = (mu_aff / mu).^3;
-
-    % Affine-Centering-Correction Direction
-    r_sz_bar = r_sz + ds_aff*dz_aff*e - rho*mu*e;
-    r_L_bar = r_L - C*(S\Z)*(r_C - Z\r_sz_bar);
-
-    rhs = -[r_L_bar; r_A];
-    solutions(p) = L'\(D\(L\rhs(p)));
-    dx = solutions(1:m);
-    dl = solutions((m + 1):(n + m));
-
-    dz = -(S\Z)*C'*dx + (S\Z)*(r_C - Z\r_sz_bar);
-    ds = -Z\r_sz_bar - Z\S*dz;
-
-    % Compute alpha
-    A_alpha = -[dz; ds];
-    b_alpha = [z;s];
-    alpha = fmincon(comp_alpha, 1, A_alpha, b_alpha);
-
-    % Update iteration
-    alpha_bar = etta*alpha;
-    x = x + alpha_bar*dx;
-    lambda = lambda + alpha_bar*dl;
-    z = alpha_bar*dz;
-    s = s + alpha_bar*ds;
-
-    % Compute residuals
-    r_L = H*x + g - A*lambda - C*z;
-    r_A = b - A'*x;
-    r_C = s + d - C'*x;
-    r_sz = S*Z*e;
-    mu = (z'*s)/m_c;
-
-    % Check convergence
-    done = ((norm(r_L,'inf') <= tol*max(1,norm([H g A C], 'inf'))) && ...
-    (norm(r_A,'inf') <= tol*max(1,norm([A' b], 'inf'))) && ...
-    (norm(r_C, 'inf') <= tol*max(1,norm([eye(length(d)) d C'], 'inf'))) && ...
-    (mu <= tol*mu0*1.0e-2));
-    it = it + 1;
-end
-
-if it > maxit
-    printf("Ran out of iterations")
+    % Duality gap and centering parameter updates
+    % Computation of the affine duality gap
+    muaff = (z+alpha*dzaff)'*(s+alpha*dsaff)/mc;
+    % Centering parameter
+    sigma = (muaff/mu)^3;
+    
+    % Calculation of affine centering correction direction
+    dSaff = diag(dsaff);
+    dZaff = diag(dzaff);
+    rSZhat = rSZ + dSaff*dZaff*e - sigma*mu*e;
+    rLhat = rL - C*(inv(S)*Z)*(rC - inv(Z)*rSZhat);
+    
+    % Solving modified KKT conditions with respect to newly calcualated
+    % rLhat value from above
+    rs = -[rLhat; rA];
+    sols(p) = L'\(D\(L\rs(p)));
+    dx = (sols(1:length(x0)))';
+    dy = (sols(length(x0)+1:end))';
+    dz = -(inv(S)*Z)*C'*dx+(inv(S)*Z)*(rC-inv(Z)*rSZhat);
+    ds = -inv(Z)*rSZhat - inv(Z)*S*dz;
+    
+    % Computing largest alpha parameter for duality gap calculation
+    Aalph = -[dz; ds];
+    balph = [z; s];
+    alpha = linprog(-1, Aalph, balph, [], [], [], [], options);
+    
+    % Updating iteration parameters
+    alphahat = eta*alpha;
+    x = x + alphahat*dx;
+    y = y + alphahat*dy;
+    z = z + alphahat*dz;
+    s = s + alphahat*ds;
+    S = diag(s);
+    Z = diag(z);
+    
+    % Residuals calculation for convergence check
+    rL = H*x + g - A*y - C*z;
+    rA = b - A'*x;
+    rC = s + d - C'*x;
+    rSZ = S*Z*e;
+    mu = (z'*s)/mc;
+    
+    % Checking for convergence
+    converged = (norm(rL, 'inf') <= tol * max(1, norm([H, g, A, C], 'inf'))) & ...
+             (norm(rA, 'inf') <= tol * max(1, norm([A', b], 'inf'))) & ...
+             (norm(rC, 'inf') <= tol * max(1, norm([eye(length(d)), d, C'], 'inf'))) & ...
+             (mu <= tol * 10^(-2) * mu0);
 end
