@@ -54,18 +54,18 @@ mu = z'*s/mc;
 
 % LDL factorization of transformed KKT conditions and its preparation
 [n, m] = size(A);
-Hhat = H + C*(Z\S)*C';
+Hhat = H + C*(inv(S)*Z)*C';
 KKT = [Hhat, -A; -A', zeros(m, m)];
 [L, D, p] = ldl(KKT, 'lower', 'vector');
 
 % Computation of initial affine direction
-rLhat = rL - C*(Z\S)*(rC-rSZ\Z);
+rLhat = rL - C*(inv(S)*Z)*(rC-inv(Z)*rSZ);
 rs = -[rLhat; rA];
 aff(p) = L'\(D\(L\rs(p)));
 dxaff = (aff(1:length(x0)))';
 dyaff = (aff(length(x0)+1:end))';
-dzaff = -(Z\S)*C'*dxaff + (Z\S)*(rC - rSZ\Z);
-dsaff = -rSZ\Z - (S\Z)*dzaff;
+dzaff = -(inv(S)*Z)*C'*dxaff + (inv(S)*Z)*(rC - inv(Z)*rSZ);
+dsaff = -inv(Z)*rSZ - inv(Z)*S*dzaff;
 
 % Initial z and s vectors
 z = max(1, abs(z + dzaff));
@@ -100,18 +100,18 @@ while ~converged && (iter < max_iter)
     iter = iter + 1;
     
     % Main loop LDL factorization of modified KKT conditions
-    Hhat = H + C*(Z\S)*C';
+    Hhat = H + C*(inv(S)*Z)*C';
     KKT = [Hhat, -A; -A', zeros(m, m)];
     [L, D, p] = ldl(KKT, 'lower', 'vector');
     
     % Main loop affine direction 
-    rLhat = rL - C*(Z\S)*(rC-rSZ\Z);
+    rLhat = rL - C*(inv(S)*Z)*(rC-inv(Z)*rSZ);
     rs = -[rLhat; rA];
     aff(p) = L'\(D\(L\rs(p)));
     dxaff = (aff(1:length(x0)))';
     dyaff = (aff(length(x0)+1:end))';
-    dzaff = -(Z\S)*C'*dxaff + (Z\S)*(rC - rSZ\Z);
-    dsaff = -rSZ\Z - (S\Z)*dzaff;
+    dzaff = -(inv(S)*Z)*C'*dxaff + (inv(S)*Z)*(rC - inv(Z)*rSZ);
+    dsaff = -inv(Z)*rSZ - inv(Z)*S*dzaff;
     
     % Calculating largest alpha for duality gap and centering parameter 
     Aalph = -[dzaff; dsaff];
@@ -128,7 +128,7 @@ while ~converged && (iter < max_iter)
     dSaff = diag(dsaff);
     dZaff = diag(dzaff);
     rSZhat = rSZ + dSaff*dZaff*e - sigma*mu*e;
-    rLhat = rL - C*(Z\S)*(rC - rSZhat\Z);
+    rLhat = rL - C*(inv(S)*Z)*(rC - inv(Z)*rSZhat);
     
     % Solving modified KKT conditions with respect to newly calcualated
     % rLhat value from above
@@ -136,8 +136,8 @@ while ~converged && (iter < max_iter)
     sols(p) = L'\(D\(L\rs(p)));
     dx = (sols(1:length(x0)))';
     dy = (sols(length(x0)+1:end))';
-    dz = -(Z\S)*C'*dx+(Z\S)*(rC-rSZhat\Z);
-    ds = -rSZhat\Z - S*dz\Z;
+    dz = -(inv(S)*Z)*C'*dx+(inv(S)*Z)*(rC-inv(Z)*rSZhat);
+    ds = -inv(Z)*rSZhat - inv(Z)*S*dz;
     
     % Computing largest alpha parameter for duality gap calculation
     Aalph = -[dz; ds];
