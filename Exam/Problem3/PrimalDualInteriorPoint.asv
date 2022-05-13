@@ -136,8 +136,8 @@ while ~converged && (iter < max_iter)
     sols(p) = L'\(D\(L\rs(p)));
     dx = (sols(1:length(x0)))';
     dy = (sols(length(x0)+1:end))';
-    dz = -(Z\S)*C'*dx+(Z\S)*(rC-rSZhat\Z);
-    ds = -rSZhat\Z - S*dz\Z;
+    dz = -(Z\S)*C'*dx+(inv(S)*Z)*(rC-inv(Z)*rSZhat);
+    ds = -inv(Z)*rSZhat - inv(Z)*S*dz;
     
     % Computing largest alpha parameter for duality gap calculation
     Aalph = -[dz; ds];
