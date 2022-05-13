@@ -47,34 +47,34 @@ figure
 subplot(2,3,1)
 plot(is,xs(:,1));
 xlim([Rmin max(A)])
-title('Portfolio % - Asset 1')
+title('Asset 1')
 xlabel('Return')
-ylabel('Risk')
+ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,2)
 plot(is,xs(:,2));
 xlim([Rmin max(A)])
-title('Portfolio % - Asset 2')
+title('Asset 2')
 xlabel('Return')
-ylabel('Risk')
+ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,3)
 plot(is,xs(:,3));
 xlim([Rmin max(A)])
-title('Portfolio % - Asset 3')
+title('Asset 3')
 xlabel('Return')
-ylabel('Risk')
+ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,4)
 plot(is,xs(:,4));
 xlim([Rmin max(A)])
-title('Portfolio % - Asset 4')
+title('Asset 4')
 xlabel('Return')
-ylabel('Risk')
+ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,5)
 plot(is,xs(:,5));
 xlim([Rmin max(A)])
-title('Portfolio % - Asset 5')
+title('Asset 5')
 xlabel('Return')
-ylabel('Risk')
+ylabel('Portfolio % (in decimals)')

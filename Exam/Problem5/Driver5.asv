@@ -1,5 +1,5 @@
 %% Markowitz portfolio as Quadratic Program
-R = 12; % Our optimal return
+R = 12; % Our desired return
 
 H = [2.50 0.93 0.62 0.74 -0.23;
     0.93 1.50 0.22 0.56 0.26;
@@ -16,22 +16,65 @@ ub = ones(5,1);
 f = zeros(5,1);
 
 options = optimoptions('quadprog','Algorithm','interior-point-convex',...
-    'Display', 'iter', 'TolFun', 1e-10);
+    'Display', 'off', 'TolFun', 1e-10);
 
 [x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
 disp(x)
 disp(fval) % Risk
 
 %% Efficient Frontier
+Rmin = min(A);
+is = zeros((max(A) - Rmin)/0.001, 1);
+fs = zeros((max(A) - Rmin)/0.001, 1);
+xs = zeros((max(A) - Rmin)/0.001, 5);
+cnt = 1;
+for i = Rmin:0.001:max(A)
+    beq = [1; i];
+    [x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
+    is(cnt) = i;
+    fs(cnt) = fval;
+    xs(cnt, :) = x;
+    cnt = cnt + 1;
+end
+figure
+plot(is, fs)
+xlim([Rmin max(A)])
+title('Efficient Frontier')
+xlabel('Return')
+ylabel('Risk')
 
 figure
-hold on
-for i = 0:0.001:max(A)
-    beq = [1, i];
-    [x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
-    plot(i, fval)
-end
-hold off
-xlim([0 max(A)])
+subplot(2,3,1)
+plot(is,xs(:,1));
+xlim([Rmin max(A)])
+title('Asset 1')
+xlabel('Return')
+ylabel('Risk')
+
+subplot(2,3,2)
+plot(is,xs(:,2));
+xlim([Rmin max(A)])
+title('Asset 2')
+xlabel('Return')
+ylabel('Risk')
+
+subplot(2,3,3)
+plot(is,xs(:,3));
+xlim([Rmin max(A)])
+title('Asset 3')
+xlabel('Return')
+ylabel('Risk')
+
+subplot(2,3,4)
+plot(is,xs(:,4));
+xlim([Rmin max(A)])
+title('Asset 4')
+xlabel('Return')
+ylabel('Risk')
+
+subplot(2,3,5)
+plot(is,xs(:,5));
+xlim([Rmin max(A)])
+title('Portfolio % - Asset 5')
 xlabel('Return')
 ylabel('Risk')
