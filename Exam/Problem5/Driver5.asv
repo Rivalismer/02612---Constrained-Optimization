@@ -1,0 +1,37 @@
+%% Markowitz portfolio as Quadratic Program
+R = 12; % Our optimal return
+
+H = [2.50 0.93 0.62 0.74 -0.23;
+    0.93 1.50 0.22 0.56 0.26;
+    0.62 0.22 1.90 0.78 -0.27;
+    0.74 0.56 0.78 3.60 -0.56;
+    -0.23 0.26 -0.27 -0.56 3.90];
+
+
+A = [16.10; 8.50; 15.70; 10.02; 18.68]';
+beq = [1; R];
+Aeq = [ones(5,1)'; A];
+lb = zeros(5,1);
+ub = ones(5,1);
+f = zeros(5,1);
+
+options = optimoptions('quadprog','Algorithm','interior-point-convex',...
+    'Display', 'iter', 'TolFun', 1e-10);
+
+[x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
+disp(x)
+disp(fval) % Risk
+
+%% Efficient Frontier
+
+figure
+hold on
+for i = 0:0.001:max(A)
+    beq = [1, i];
+    [x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
+    plot(i, fval)
+end
+hold off
+xlim([0 max(A)])
+xlabel('Return')
+ylabel('Risk')
