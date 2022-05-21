@@ -1,4 +1,4 @@
-function [x_opt, iter, converged] = PrimalDualInteriorPoint(x0, mu0, lambda0, g, A, b, l, u)
+function [x_opt, iter, converged] = PrimalDualInteriorPoint2(x0, mu0, lambda0, g, A, b, l, u)
 %{
     This function is designed to solve linear programming minimization 
     problems wrt. x vector in form of:
@@ -32,19 +32,29 @@ iter = 0;
 
 % Converting input to standard form of Linear Problem
 A = A';
-g = [g; zeros(length(x0), 1)];
-b = [b; u];
-x = [x0-l; u-x0];
-A = [A, zeros(size(A)); diag(ones(length(x0), 1)), diag(ones(length(x0), 1))];
-mu = [mu0; ones(length(x0), 1)];
-lambda = [lambda0; lambda0];
+[m, n] = size(A);
+g = [g; zeros(2*length(x0), 1)];
+b = [b; l; u];
+x = [x0; x0-l; u-x0];
+A = [A, zeros(m, n), zeros(m, n)
+    eye(n), -eye(n), zeros(n, n) 
+    eye(n), zeros(n, n), eye(n)];
+
+mu = [mu0; ones(2*length(x0), 1)];
+lambda = [lambda0; lambda0; lambda0];
 
 % Preparing X, huge LAMBDA and e matrices and vectors
 X = diag(x);
 LAMBDA = diag(lambda);
 e = ones(length(x), 1);
 n = length(x);
+lm = length(mu);
 
+% Computing initial residuals
+rL = g - A'*mu - lambda;
+rA = A*x - b;
+rXL = X*LAMBDA*e;
+s = x'*lambda/n;
 
 %% Stopping criteria 
 
@@ -67,17 +77,25 @@ while ~converged && (iter < max_iter)
     % Iteration number
     iter = iter + 1;
     
-    % Defining correctors step Newton's matrix
-    Ls = [zeros(size(X)), -A', -eye(size(X));
-         A, zeros(length(mu), length(mu)), zeros(length(mu), length(x));
-         LAMBDA, zeros(length(x), length(mu)), X];
-    Rs = -[rL; rA; rXL];
+    [m, n] = size(X);
     
+    % Defining correctors step Newton's matrix
+    Ls = [zeros(m, n), -A', -eye(m, n);
+         A, zeros(lm, lm), zeros(lm, n);
+         LAMBDA, zeros(n, lm), X];
+    Rs = -[rL; rA; rXL];
+    Ls = sparse(Ls);
+    
+%###################################################
+    % LU 
+
+    [L,U,p] = lu(Ls,'vector');
+    sols = U\(L\Rs(p));
+  
     % Solving system of equations
-    sols = Ls\Rs;
-    dxaff = (sols(1:length(x)));
-    dmuaff = (sols(length(x)+1:length(x)+length(mu)));
-    dlambdaaff = (sols(length(x)+length(mu)+1:end));
+    dxaff = (sols(1:n));
+    dmuaff = (sols(n+1:n+lm));
+    dlambdaaff = (sols(n+lm+1:end));
     
     % Calculating largest alpha and beta for duality gap and centering parameter 
     alpha = linprog(-1, -dxaff, x, [], [], [], [], options);
@@ -106,10 +124,10 @@ while ~converged && (iter < max_iter)
     Rs = -[rL; rA; rXL];
     
     % Solving system of equations
-    sols = Ls\Rs;
-    dx = (sols(1:length(x)));
-    dmu = (sols(length(x)+1:length(x)+length(mu)));
-    dlambda = (sols(length(x)+length(mu)+1:end));
+    sols = U\(L\Rs(p));
+    dx = (sols(1:n));
+    dmu = (sols(n+1:n+lm));
+    dlambda = (sols(n+lm+1:end));
     
     % Calculating largest alpha and beta for duality gap and centering parameter 
     alpha = linprog(-1, -dx, x, [], [], [], [], options);
