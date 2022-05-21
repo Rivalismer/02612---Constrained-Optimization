@@ -84,13 +84,25 @@ ylabel('Portfolio % (in decimals)')
 
 %% Bi-criterion - minimise risk while optimising return
 % Prioritisation of risk (H) versus return (f)
-alpha = linspace(0,0.99,100);
+clear; clc; close all;
+H = [2.50 0.93 0.62 0.74 -0.23;
+    0.93 1.50 0.22 0.56 0.26;
+    0.62 0.22 1.90 0.78 -0.27;
+    0.74 0.56 0.78 3.60 -0.56;
+    -0.23 0.26 -0.27 -0.56 3.90];
+
+
+A = [16.10; 8.50; 15.70; 10.02; 18.68]';
+lb = zeros(5,1);
+ub = ones(5,1);
+alpha = linspace(0,1,101);
 beq = 1;
 Aeq = ones(5,1)';
 xsol = zeros(length(alpha),5);
 
 options = optimoptions('quadprog','Algorithm','interior-point-convex',...
     'Display', 'off', 'TolFun', 1e-10);
+methods = {'PDIP', 'quadprog', 'Gurobi'};
 %% Quadprog
 for i=1:length(alpha)
     H_bi = (1-alpha(i))*H;
@@ -98,7 +110,44 @@ for i=1:length(alpha)
     [x,fval,exitflag,output,lambda] = quadprog(H_bi,g,[],[],Aeq,beq,lb,ub,[],options);
     xsol(i,:) = x;
 end
+%% CVX
+for i = 1:length(alpha)
+    try
+    cvx_begin
+        variable x_c(5)
+        minimize((1-alpha(i))*x_c'*H*x_c -alpha(i)*A*x_c)
+        subject to
+            Aeq * x_c == beq
+            x_c <= ub
+            x_c >= lb
+    cvx_end
+    catch
+        fprintf('CVX\nError occured for alpha = %f', alpha(i))
+        x_c = zeros(5,1);
+    end
+    sols.c(i,:) = x_c;        % minimizer
+end
+xsol = sols.c;
+%% Gurobi
+cvx_solver Gurobi
+for i=1:length(alpha)
+    try
+        cvx_begin
+            variable x_gb(5)        
+            minimize((1-alpha(i))*x_gb'*H*x_gb -alpha(i)*A*x_gb)
+            subject to
+                Aeq * x_gb == beq
+                x_gb <= ub
+                x_gb >= lb
+        cvx_end
+    catch
+        fprintf('Gurobi\nError occured for alpha = %f', alpha(i))
+        x_gb = zeros(5,1);
+    end
+    sols.x_gb(i,:) = x_gb;        % gurobi minimizer
+end
 
+xsol = sols.x_gb;
 %% LU
 for i=1:length(alpha)
     H_bi = (1-alpha(i))*H;
@@ -144,8 +193,20 @@ for i=1:length(alpha)
 end
 
 %% Interior-Point Linear
-
+% Doesn't actually work because the solver turns the matrix singular - thus
+% calling linprog fails
+x0 = zeros(5,1);
+lambda0 = zeros(5,1);
+mu0 = 0.5;
+for i=2:length(alpha)
+    g = -alpha(i)*A';
+    [x,iter,converged] = PrimalDualLinear(x0,mu0,lambda0,g,Aeq',beq,lb,ub);
+    xsol(i,:) = x;
+    disp(i);
+end
 %% Plotting
+
+
 figure
 subplot(2,3,1)
 plot(alpha,xsol(:,1));
