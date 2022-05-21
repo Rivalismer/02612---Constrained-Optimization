@@ -45,7 +45,6 @@ LAMBDA = diag(lambda);
 e = ones(length(x), 1);
 n = length(x);
 
-
 %% Stopping criteria 
 
 % Residuals estimation

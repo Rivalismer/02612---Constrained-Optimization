@@ -84,14 +84,14 @@ ylabel('Portfolio % (in decimals)')
 
 %% Bi-criterion - minimise risk while optimising return
 % Prioritisation of risk (H) versus return (f)
-alpha = linspace(0,0.99,100);
+alpha = linspace(0,1,101);
 beq = 1;
 Aeq = ones(5,1)';
 xsol = zeros(length(alpha),5);
 
 options = optimoptions('quadprog','Algorithm','interior-point-convex',...
     'Display', 'off', 'TolFun', 1e-10);
-
+%% Quadprog
 for i=1:length(alpha)
     H_bi = (1-alpha(i))*H;
     g = -alpha(i)*A';
@@ -99,6 +99,61 @@ for i=1:length(alpha)
     xsol(i,:) = x;
 end
 
+%% LU
+for i=1:length(alpha)
+    H_bi = (1-alpha(i))*H;
+    g = -alpha(i)*A';
+    [x,lambda] = EqualityQPSolver(H_bi,g, Aeq',beq,'LUDense');
+    xsol(i,:) = x;
+end
+
+%% LDL
+for i=1:length(alpha)
+    H_bi = (1-alpha(i))*H;
+    g = -alpha(i)*A';
+    [x,lambda] = EqualityQPSolver(H_bi,g, Aeq',beq,'LDLDense');
+    xsol(i,:) = x;
+end
+
+%% Null-Space
+for i=1:length(alpha)
+    H_bi = (1-alpha(i))*H;
+    g = -alpha(i)*A';
+    [x,lambda] = EqualityQPSolver(H_bi,g, Aeq',beq,'NullSpace');
+    xsol(i,:) = x;
+end
+
+%% Range-Space
+for i=1:length(alpha)
+    H_bi = (1-alpha(i))*H;
+    g = -alpha(i)*A';
+    [x,lambda] = EqualityQPSolver(H_bi,g, Aeq',beq,'RangeSpace');
+    xsol(i,:) = x;
+end
+
+%% Interior-Point quadratic
+x0 = zeros(5,1);
+y0 = 1;
+s0 = ones(10,1);
+z0 = ones(10,1);
+for i=1:length(alpha)
+    H_bi = (1-alpha(i))*H;
+    g = -alpha(i)*A';
+    [x,iter,converged] = PrimalDualInteriorPoint(x0,y0,s0,z0,H_bi,g,Aeq',beq,lb,ub);
+    xsol(i,:) = x;
+end
+
+%% Interior-Point Linear
+x0 = zeros(5,1);
+lambda0 = zeros(5,1);
+mu0 = 0.5;
+for i=1:length(alpha)
+    H_bi = (1-alpha(i))*H;
+    g = -alpha(i)*A';
+    [x,iter,converged] = PrimalDualLinear(x0,mu0,lambda0,g,Aeq',beq,lb,ub);
+    xsol(i,:) = x;
+end
+%% Plotting
 figure
 subplot(2,3,1)
 plot(alpha,xsol(:,1));
