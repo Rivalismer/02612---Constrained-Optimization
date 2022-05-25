@@ -42,13 +42,13 @@ for i = Rmin:0.001:max(A)
     cnt = cnt + 1;
 end
 % Locating optimal portfolio
-opt_risk = is(find(fs==min(fs)));
+opt_return = is(find(fs==min(fs)));
 
 % Preparing plots
 figure(1)
 hold on;
 plot(is, fs, "LineWidth", 2)
-scatter(opt_risk, min(fs), 30, 'filled')
+scatter(opt_return, min(fs), 30, 'filled')
 xlim([Rmin max(A)])
 title('Efficient Frontier')
 xlabel('Return')
