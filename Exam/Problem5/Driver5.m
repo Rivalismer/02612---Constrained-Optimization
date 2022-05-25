@@ -20,7 +20,7 @@ options = optimoptions('quadprog','Algorithm','interior-point-convex',...
 
 [x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
 disp(x)
-disp(fval) % Risk
+disp(2*fval) % Risk
 
 %% Efficient Frontier
 % Min return is 0, but it can't compute that as it makes the problem
