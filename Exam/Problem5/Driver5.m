@@ -293,54 +293,62 @@ for i = Rmin:0.001:max(A)
     cnt = cnt + 1;
 end
 figure
-plot(is, fs)
+plot(is, fs, "LineWidth", 2)
 xlim([Rmin max(A)])
 title('Efficient Frontier')
 xlabel('Return')
 ylabel('Risk')
+set(gca, "FontSize", 12);
 
 figure
 subplot(2,3,1)
-plot(is,xs(:,1));
+pl1 = plot(is,xs(:,1));
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 1')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,2)
-plot(is,xs(:,2));
+pl2 = plot(is,xs(:,2));
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 2')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,3)
-plot(is,xs(:,3));
+pl3 = plot(is,xs(:,3));
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 3')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,4)
-plot(is,xs(:,4));
+pl4 = plot(is,xs(:,4));
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 4')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,5)
-plot(is,xs(:,5));
+pl6 = plot(is,xs(:,5));
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 5')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,6)
-plot(is, xs(:,6));
+pl5 = plot(is, xs(:,6));
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 6')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
+set([pl1, pl2, pl3, pl4, pl5, pl6], 'LineWidth', 1.5)
 
 %% With R = 14
 Rmin = min(A);
@@ -365,71 +373,79 @@ beq = [1; R];
 % Plots
 figure
 hold on
-plot(is, fs)
-plot(14, fval, 'r.','LineWidth',2,'MarkerSize',25)
+plot(is, fs, 'Linewidth', 2)
+plot(14, 2*fval, 'r.','LineWidth',2,'MarkerSize',25)
 hold off
 xlim([Rmin max(A)])
 title('Efficient Frontier')
 xlabel('Return')
 ylabel('Risk')
+legend(["Efficient frontier", 'Optimal portfolio for R=14'], "location", "best")
 
 figure
 subplot(2,3,1)
 hold on
-plot(is,xs(:,1));
+pl1 = plot(is,xs(:,1));
 plot(14,x(1),'r.','LineWidth',2,'MarkerSize',25);
 hold off
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 1')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,2)
 hold on
-plot(is,xs(:,2));
+pl2 = plot(is,xs(:,2));
 plot(14,x(2),'r.','LineWidth',2,'MarkerSize',25);
 hold off
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 2')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,3)
 hold on
-plot(is,xs(:,3));
+pl3 = plot(is,xs(:,3));
 plot(14,x(3),'r.','LineWidth',2,'MarkerSize',25);
 hold off
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 3')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,4)
 hold on
-plot(is,xs(:,4));
+pl4 = plot(is,xs(:,4));
 plot(14,x(4),'r.','LineWidth',2,'MarkerSize',25);
 hold off
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 4')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,5)
 hold on
-plot(is,xs(:,5));
+pl5 = plot(is,xs(:,5));
 plot(14,x(5),'r.','LineWidth',2,'MarkerSize',25);
 hold off
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 5')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 subplot(2,3,6)
 hold on
-plot(is, xs(:,6));
+pl6 = plot(is, xs(:,6));
 plot(14,x(6),'r.','LineWidth',2,'MarkerSize',25);
 hold off
 xlim([Rmin max(A)])
+ylim([0 1])
 title('Asset 6')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
+set([pl1, pl2, pl3, pl4, pl5, pl6], 'LineWidth', 1.5)
