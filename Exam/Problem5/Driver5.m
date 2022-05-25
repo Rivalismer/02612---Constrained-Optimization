@@ -35,7 +35,9 @@ for i = Rmin:0.001:max(A)
     beq = [1; i];
     [x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
     is(cnt) = i;
-    fs(cnt) = fval;
+    % quadprog considers problem in form 1/2x'Hx, thus optimal value
+    % extracted is 2 times smaller than actual value of risk, which is x'Hx
+    fs(cnt) = 2*fval;
     xs(cnt, :) = x;
     cnt = cnt + 1;
 end

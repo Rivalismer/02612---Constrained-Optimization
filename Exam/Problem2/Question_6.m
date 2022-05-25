@@ -140,3 +140,39 @@ ylabel('Iterations number');
 set(gca, "FontSize", 12);
 legend({'primal-dual','quadprog'}, 'Location', 'best')
 hold off;
+
+% Plotting separately all x dimensions
+figure(5);
+hold on;
+% x1
+subplot(2, 6, [1,2]);
+plot(bs, stats.x_qp(1, :));
+title('x_1');
+xlabel('b(1)');
+ylabel('x_1');
+% x2
+subplot(2, 6, [3,4]);
+plot(bs, stats.x_qp(2, :));
+title('x_2');
+xlabel('b(1)');
+ylabel('x_2');
+% x3
+subplot(2, 6, [5,6]);
+plot(bs, stats.x_qp(3, :));
+title('x_3');
+xlabel('b(1)');
+ylabel('x_3');
+% x4
+subplot(2, 6, [8,9]);
+plot(bs, stats.x_qp(4, :));
+title('x_4');
+xlabel('b(1)');
+ylabel('x_4');
+% x5
+subplot(2, 6, [10,11]);
+plot(bs, stats.x_qp(5, :));
+title('x_5');
+xlabel('b(1)');
+ylabel('x_5');
+
+
