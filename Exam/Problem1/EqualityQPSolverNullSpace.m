@@ -32,5 +32,4 @@ x = (Q1*x_y + Q2*x_z);
 lambda = (R\Q1'*(H*x+g));
 
 % Invert solution
-x = -x;
 lambda = -lambda;
