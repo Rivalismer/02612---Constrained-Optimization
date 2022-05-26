@@ -98,7 +98,7 @@ title('Asset 5')
 xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
-%% Bi-criterion - minimise risk while optimising return
+%% Bi-criterion problem
 clear all, close all, clc
 %{
     This driver is used for bi-criterion optimization of portfolio. Whole
@@ -194,7 +194,7 @@ for i=1:1:length(alpha)-1
     [x,lambda] = EqualityQPSolver(H_bi,g_bi, Aeq',beq,'RangeSpace');
     cputime = toc;
     stats.x_ns(i, :) = x;
-    stats.return(i, 4) = -g'*x;
+    stats.return(i, 4) = g'*x;
     stats.risk(i, 4) = x'*H*x;
     stats.cputime(i, 4) = cputime;
 end
@@ -211,7 +211,7 @@ for i=1:1:length(alpha)-1
     [x,iter,converged] = PrimalDualInteriorPoint(x0,y0,s0,z0,H_bi,g_bi,Aeq',beq,lb,ub);
     cputime = toc;
     stats.x_pdip(i, :) = x;
-    stats.return(i, 5) = g'*x;
+    stats.return(i, 5) = -g'*x;
     stats.risk(i, 5) = x'*H*x;
     stats.cputime(i, 5) = cputime;
     stats.iter(i, 1) = iter;
@@ -226,7 +226,7 @@ for i=1:1:length(alpha)-1
     [x,fval,~,output] = quadprog(H_bi,g_bi,[],[],Aeq,beq,lb,ub,[],options);
     cputime = toc;
     stats.x_qp(i, :) = x;
-    stats.return(i, 6) = g'*x;
+    stats.return(i, 6) = -g'*x;
     stats.risk(i, 6) = x'*H*x;
     stats.cputime(i, 6) = cputime;
     stats.iter(i, 2) = output.iterations;
@@ -246,10 +246,11 @@ for i = 1:length(alpha)-1
     cvx_end
     cputime = toc;
     stats.x_c(i, :) = x_c;
-    stats.return(i, 7) = g'*x_c;
+    stats.return(i, 7) = -g'*x_c;
     stats.risk(i, 7) = x_c'*H*x_c;
     stats.cputime(i, 7) = cputime;
 end
+
 %% Gurobi
 cvx_solver Gurobi
 for i = 1:length(alpha)-1
@@ -264,7 +265,7 @@ for i = 1:length(alpha)-1
     cvx_end
     cputime = toc;
     stats.x_c(i, :) = x_c;
-    stats.return(i, 8) = g'*x_c;
+    stats.return(i, 8) = -g'*x_c;
     stats.risk(i, 8) = x_c'*H*x_c;
     stats.cputime(i, 8) = cputime;
 end
@@ -354,7 +355,7 @@ legend({'Primal dual interior point', 'quadprog'}, 'location', 'northeast')
 % Return-risk trade-off
 
 figure 
-plot(stats.risk(:, 5), -stats.return(:,5), 'LineWidth', 2)
+plot(stats.return(:, 5), stats.risk(:,5), 'LineWidth', 2)
 title('Risk-return trade-off')
 xlabel('Return')
 ylabel('Risk')
