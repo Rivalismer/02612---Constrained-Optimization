@@ -264,7 +264,7 @@ for i = 1:length(alpha)-1
             x_c >= lb
     cvx_end
     cputime = toc;
-    stats.x_c(i, :) = x_c;
+    stats.x_g(i, :) = x_c;
     stats.return(i, 8) = -g'*x_c;
     stats.risk(i, 8) = x_c'*H*x_c;
     stats.cputime(i, 8) = cputime;
@@ -380,6 +380,73 @@ title('Number of iterations for primal dual algorithm')
 xlabel('\alpha')
 ylabel('Iterations')
 set(gca, 'FontSize', 12)
+
+% Risk-return tradeoff qp vs commercial
+
+figure 
+hold on
+scatter(stats.return(:, 5), stats.risk(:,5), 30, 'filled')
+scatter(stats.return(:, 7), stats.risk(:,7), 30, "*")
+title('Risk-return trade-off')
+xlabel('Return')
+ylabel('Risk')
+set(gca, 'FontSize', 12)
+legend({'PDIP, quadprog', 'SDPT3, Gurobi'}, 'location', 'northeast')
+
+% Weight distribution for assets quadprog vs commercial
+figure
+subplot(2,6,[1,2])
+hold on
+pl6 = plot(alpha(1:100), stats.x_g(:,1));
+pl1 = plot(alpha(1:100),stats.x_qp(:,1));
+xlim([min(alpha) max(alpha)])
+ylim([0 1])
+title('Asset 1')
+xlabel('\alpha')
+ylabel('Portfolio % (in decimals)')
+legend({'SDPT3, Gurobi', 'PDIP, quadprog'}, 'location', 'best')
+
+subplot(2,6,[3,4])
+hold on
+pl7 = plot(alpha(1:100), stats.x_g(:,2));
+pl2 = plot(alpha(1:100),stats.x_qp(:,2));
+xlim([min(alpha) max(alpha)])
+ylim([0 1])
+title('Asset 2')
+xlabel('\alpha')
+legend({'SDPT3, Gurobi', 'PDIP, quadprog'}, 'location', 'best')
+
+subplot(2,6,[5,6])
+hold on
+pl10 = plot(alpha(1:100), stats.x_g(:,3));
+pl3 = plot(alpha(1:100),stats.x_qp(:,3));
+xlim([min(alpha) max(alpha)])
+ylim([0 1])
+title('Asset 3')
+xlabel('\alpha')
+legend({'SDPT3, Gurobi', 'PDIP, quadprog'}, 'location', 'best')
+
+subplot(2,6,[8,9])
+hold on
+pl8 = plot(alpha(1:100), stats.x_g(:,4))
+pl4 = plot(alpha(1:100),stats.x_qp(:,4));
+xlim([min(alpha) max(alpha)])
+ylim([0 1])
+title('Asset 4')
+xlabel('\alpha')
+ylabel('Portfolio % (in decimals)')
+legend({'SDPT3, Gurobi', 'PDIP, quadprog'}, 'location', 'best')
+
+subplot(2,6,[10, 11])
+hold on
+pl9 = plot(alpha(1:100), stats.x_g(:,5))
+pl5 = plot(alpha(1:100),stats.x_qp(:,5));
+xlim([min(alpha) max(alpha)])
+ylim([0 1])
+title('Asset 5')
+xlabel('\alpha')
+legend({'SDPT3, Gurobi', 'PDIP, quadprog'}, 'location', 'best')
+set([pl1, pl2, pl3, pl4, pl5, pl6, pl7, pl8, pl9, pl10], 'LineWidth', 1.5)
 
 %% Risk free asset - 0 covariance with everything
 R=12;
