@@ -99,167 +99,289 @@ xlabel('Return')
 ylabel('Portfolio % (in decimals)')
 
 %% Bi-criterion - minimise risk while optimising return
-% Prioritisation of risk (H) versus return (f)
-clear; clc; close all;
+clear all, close all, clc
+%{
+    This driver is used for bi-criterion optimization of portfolio. Whole
+    variety of solvers will be investigated to solve problem, with alpha
+    parameter change
+%}
+% Options for solvers
+options = optimoptions('quadprog','Algorithm','interior-point-convex',...
+    'Display', 'off', 'TolFun', 1e-10);
+
+%% Define problem
+
+% Covariance matrix
 H = [2.50 0.93 0.62 0.74 -0.23;
     0.93 1.50 0.22 0.56 0.26;
     0.62 0.22 1.90 0.78 -0.27;
     0.74 0.56 0.78 3.60 -0.56;
     -0.23 0.26 -0.27 -0.56 3.90];
 
+% Returns vector
+g = [16.10; 8.50; 15.70; 10.02; 18.68]';
 
-A = [16.10; 8.50; 15.70; 10.02; 18.68]';
+% Constraints
 lb = zeros(5,1);
 ub = ones(5,1);
 alpha = linspace(0,1,101);
 beq = 1;
 Aeq = ones(5,1)';
-xsol = zeros(length(alpha),5);
 
-options = optimoptions('quadprog','Algorithm','interior-point-convex',...
-    'Display', 'off', 'TolFun', 1e-10);
-methods = {'PDIP', 'quadprog', 'Gurobi'};
-%% Quadprog
-for i=1:length(alpha)
+%################################################
+%       DIFFERENT SOLVERS INVESTIGATION
+%################################################
+
+%% Interior-Point Linear
+% Calculation only for alpha value equal to 1 since problem becomes linear
+x0 = 0.2*ones(5,1);
+lambda0 = 0.5*ones(5,1);
+mu0 = 0.5;
+tic
+g = -g';
+[x,iter,converged] = PrimalDualInteriorPointLP(x0,mu0,lambda0,g,Aeq',beq,lb,ub);
+cputime = toc;
+% Printing results
+disp('Primal-dual interior point for linear programming:')
+disp(x);
+fprintf('Number of iterations: %i \n', iter)
+fprintf('Computation time: %f s \n', cputime)
+
+%% LU
+for i=1:1:length(alpha)-1
     H_bi = (1-alpha(i))*H;
-    g = -alpha(i)*A';
-    [x,fval,exitflag,output,lambda] = quadprog(H_bi,g,[],[],Aeq,beq,lb,ub,[],options);
-    xsol(i,:) = x;
+    g_bi = -alpha(i)*g;
+    tic
+    [x,lambda] = EqualityQPSolver(H_bi,g_bi, Aeq',beq,'LUDense');
+    cputime = toc;
+    stats.x_lu(i, :) = x;
+    stats.return(i, 1) = -g'*x;
+    stats.risk(i, 1) = x'*H*x;
+    stats.cputime(i, 1) = cputime;
 end
+
+%% LDL
+for i=1:1:length(alpha)-1
+    H_bi = (1-alpha(i))*H;
+    g_bi = -alpha(i)*g;
+    tic
+    [x,lambda] = EqualityQPSolver(H_bi,g_bi, Aeq',beq,'LDLDense');
+    cputime = toc;
+    stats.x_ldl(i, :) = x;
+    stats.return(i, 2) = -g'*x;
+    stats.risk(i, 2) = x'*H*x;
+    stats.cputime(i, 2) = cputime;
+end
+
+%% Null-Space
+for i=1:1:length(alpha)-1
+    H_bi = (1-alpha(i))*H;
+    g_bi = -alpha(i)*g;
+    tic
+    [x,lambda] = EqualityQPSolver(H_bi,g_bi, Aeq',beq,'NullSpace');
+    cputime = toc;
+    stats.x_rs(i, :) = x;
+    stats.return(i, 3) = -g'*x;
+    stats.risk(i, 3) = x'*H*x;
+    stats.cputime(i, 3) = cputime;
+end
+
+%% Range-Space
+for i=1:1:length(alpha)-1
+    H_bi = (1-alpha(i))*H;
+    g_bi = -alpha(i)*g;
+    tic
+    [x,lambda] = EqualityQPSolver(H_bi,g_bi, Aeq',beq,'RangeSpace');
+    cputime = toc;
+    stats.x_ns(i, :) = x;
+    stats.return(i, 4) = -g'*x;
+    stats.risk(i, 4) = x'*H*x;
+    stats.cputime(i, 4) = cputime;
+end
+
+%% Interior-Point quadratic
+x0 = 0.2*ones(5,1);
+y0 = 1;
+s0 = ones(10,1);
+z0 = ones(10,1);
+for i=1:1:length(alpha)-1
+    H_bi = (1-alpha(i))*H;
+    g_bi = -alpha(i)*g;
+    tic
+    [x,iter,converged] = PrimalDualInteriorPoint(x0,y0,s0,z0,H_bi,g_bi,Aeq',beq,lb,ub);
+    cputime = toc;
+    stats.x_pdip(i, :) = x;
+    stats.return(i, 5) = g'*x;
+    stats.risk(i, 5) = x'*H*x;
+    stats.cputime(i, 5) = cputime;
+    stats.iter(i, 1) = iter;
+end
+
+%% Quadprog
+
+for i=1:1:length(alpha)-1
+    H_bi = (1-alpha(i))*H;
+    g_bi = -alpha(i)*g';
+    tic
+    [x,fval,~,output] = quadprog(H_bi,g_bi,[],[],Aeq,beq,lb,ub,[],options);
+    cputime = toc;
+    stats.x_qp(i, :) = x;
+    stats.return(i, 6) = g'*x;
+    stats.risk(i, 6) = x'*H*x;
+    stats.cputime(i, 6) = cputime;
+    stats.iter(i, 2) = output.iterations;
+    stats.fval(i) = fval;
+end
+
 %% CVX
-for i = 1:length(alpha)
-    try
+for i = 1:length(alpha)-1
+    tic
     cvx_begin
         variable x_c(5)
-        minimize((1-alpha(i))*x_c'*H*x_c -alpha(i)*A*x_c)
+        minimize((1-alpha(i))*x_c'*H*x_c -alpha(i)*g'*x_c)
         subject to
             Aeq * x_c == beq
             x_c <= ub
             x_c >= lb
     cvx_end
-    catch
-        fprintf('CVX\nError occured for alpha = %f', alpha(i))
-        x_c = zeros(5,1);
-    end
-    sols.c(i,:) = x_c;        % minimizer
+    cputime = toc;
+    stats.x_c(i, :) = x_c;
+    stats.return(i, 7) = g'*x_c;
+    stats.risk(i, 7) = x_c'*H*x_c;
+    stats.cputime(i, 7) = cputime;
 end
-xsol = sols.c;
 %% Gurobi
 cvx_solver Gurobi
-for i=1:length(alpha)
-    try
-        cvx_begin
-            variable x_gb(5)        
-            minimize((1-alpha(i))*x_gb'*H*x_gb -alpha(i)*A*x_gb)
-            subject to
-                Aeq * x_gb == beq
-                x_gb <= ub
-                x_gb >= lb
-        cvx_end
-    catch
-        fprintf('Gurobi\nError occured for alpha = %f', alpha(i))
-        x_gb = zeros(5,1);
-    end
-    sols.x_gb(i,:) = x_gb;        % gurobi minimizer
+for i = 1:length(alpha)-1
+    tic
+    cvx_begin
+        variable x_c(5)
+        minimize((1-alpha(i))*x_c'*H*x_c -alpha(i)*g'*x_c)
+        subject to
+            Aeq * x_c == beq
+            x_c <= ub
+            x_c >= lb
+    cvx_end
+    cputime = toc;
+    stats.x_c(i, :) = x_c;
+    stats.return(i, 8) = g'*x_c;
+    stats.risk(i, 8) = x_c'*H*x_c;
+    stats.cputime(i, 8) = cputime;
 end
 
-xsol = sols.x_gb;
-%% LU
-for i=1:length(alpha)
-    H_bi = (1-alpha(i))*H;
-    g = -alpha(i)*A';
-    [x,lambda] = EqualityQPSolver(H_bi,g, Aeq',beq,'LUDense');
-    xsol(i,:) = x;
-end
-
-%% LDL
-for i=1:length(alpha)
-    H_bi = (1-alpha(i))*H;
-    g = -alpha(i)*A';
-    [x,lambda] = EqualityQPSolver(H_bi,g, Aeq',beq,'LDLDense');
-    xsol(i,:) = x;
-end
-
-%% Null-Space
-for i=1:length(alpha)
-    H_bi = (1-alpha(i))*H;
-    g = -alpha(i)*A';
-    [x,lambda] = EqualityQPSolver(H_bi,g, Aeq',beq,'NullSpace');
-    xsol(i,:) = x;
-end
-
-%% Range-Space
-for i=1:length(alpha)
-    H_bi = (1-alpha(i))*H;
-    g = -alpha(i)*A';
-    [x,lambda] = EqualityQPSolver(H_bi,g, Aeq',beq,'RangeSpace');
-    xsol(i,:) = x;
-end
-
-%% Interior-Point quadratic
-x0 = zeros(5,1);
-y0 = 1;
-s0 = ones(10,1);
-z0 = ones(10,1);
-for i=1:length(alpha)
-    H_bi = (1-alpha(i))*H;
-    g = -alpha(i)*A';
-    [x,iter,converged] = PrimalDualInteriorPoint(x0,y0,s0,z0,H_bi,g,Aeq',beq,lb,ub);
-    xsol(i,:) = x;
-end
-
-%% Interior-Point Linear
-% Doesn't actually work because the solver turns the matrix singular - thus
-% calling linprog fails
-x0 = zeros(5,1);
-lambda0 = zeros(5,1);
-mu0 = 0.5;
-for i=2:length(alpha)
-    g = -alpha(i)*A';
-    [x,iter,converged] = PrimalDualLinear(x0,mu0,lambda0,g,Aeq',beq,lb,ub);
-    xsol(i,:) = x;
-    disp(i);
-end
 %% Plotting
 
-
+% Weight distribution for assets with varying alpha
 figure
-subplot(2,3,1)
-plot(alpha,xsol(:,1));
+subplot(2,6,[1,2])
+pl1 = plot(alpha(1:100),stats.x_qp(:,1));
 xlim([min(alpha) max(alpha)])
+ylim([0 1])
 title('Asset 1')
 xlabel('\alpha')
 ylabel('Portfolio % (in decimals)')
 
-subplot(2,3,2)
-plot(alpha,xsol(:,2));
+subplot(2,6,[3,4])
+pl2 = plot(alpha(1:100),stats.x_qp(:,2));
 xlim([min(alpha) max(alpha)])
+ylim([0 1])
 title('Asset 2')
 xlabel('\alpha')
-ylabel('Portfolio % (in decimals)')
 
-subplot(2,3,3)
-plot(alpha,xsol(:,3));
+subplot(2,6,[5,6])
+pl3 = plot(alpha(1:100),stats.x_qp(:,3));
 xlim([min(alpha) max(alpha)])
+ylim([0 1])
 title('Asset 3')
 xlabel('\alpha')
-ylabel('Portfolio % (in decimals)')
 
-subplot(2,3,4)
-plot(alpha,xsol(:,4));
+subplot(2,6,[8,9])
+pl4 = plot(alpha(1:100),stats.x_qp(:,4));
 xlim([min(alpha) max(alpha)])
+ylim([0 1])
 title('Asset 4')
 xlabel('\alpha')
 ylabel('Portfolio % (in decimals)')
 
-subplot(2,3,5)
-plot(alpha,xsol(:,5));
+subplot(2,6,[10, 11])
+pl5 = plot(alpha(1:100),stats.x_qp(:,5));
 xlim([min(alpha) max(alpha)])
+ylim([0 1])
 title('Asset 5')
 xlabel('\alpha')
-ylabel('Portfolio % (in decimals)')
+set([pl1, pl2, pl3, pl4, pl5], 'LineWidth', 1.5)
+
+% Optimal function value 
+
+figure
+plot(alpha(1:100), stats.fval, 'LineWidth', 2);
+xlim([min(alpha) max(alpha)]);
+title('Optimal objective function value')
+xlabel('\alpha')
+ylabel('F value')
+set(gca, 'FontSize', 12)
+
+% CPU times
+
+figure
+hold on;
+scatter(alpha(1:100), stats.cputime(:, 5), 30, 'filled');
+scatter(alpha(1:100), stats.cputime(:, 6), 30, 'filled');
+scatter(alpha(1:100), stats.cputime(:, 7), 30, 'filled');
+scatter(alpha(1:100), stats.cputime(:, 8), 30, 'filled');
+xlim([min(alpha) max(alpha)]);
+title('Computation time for quadratic programming')
+xlabel('\alpha')
+ylabel('Time (s)')
+legend({'Primal dual interior point', 'quadprog', 'SDPT3', 'Gurobi'}, 'location', 'best')
+set(gca, 'FontSize', 12)
+
+
+% Number of iterations
+
+figure
+hold on;
+scatter(alpha(1:100), stats.iter(:, 1), 30, 'filled');
+scatter(alpha(1:100), stats.iter(:, 2), 30, 'filled');
+xlim([min(alpha) max(alpha)]);
+title('Number of iterations for qp methods')
+xlabel('\alpha')
+ylabel('Iterations')
+set(gca, 'FontSize', 12)
+hold off
+legend({'Primal dual interior point', 'quadprog'}, 'location', 'northeast')
+
+% Return-risk trade-off
+
+figure 
+plot(stats.risk(:, 5), -stats.return(:,5), 'LineWidth', 2)
+title('Risk-return trade-off')
+xlabel('Return')
+ylabel('Risk')
+set(gca, 'FontSize', 12)
+
+% Primal dual computation time
+
+figure
+scatter(alpha(1:100), stats.cputime(:, 5), 30, 'filled');
+xlim([min(alpha) max(alpha)]);
+title('Computation time for primal dual algorithm')
+xlabel('\alpha')
+ylabel('Time')
+set(gca, 'FontSize', 12)
+
+% Primal dual iterations number
+
+figure
+scatter(alpha(1:100), stats.iter(:, 1), 30, 'filled');
+xlim([min(alpha) max(alpha)]);
+title('Number of iterations for primal dual algorithm')
+xlabel('\alpha')
+ylabel('Iterations')
+set(gca, 'FontSize', 12)
 
 %% Risk free asset - 0 covariance with everything
+R=12;
 % Also rf = 0, so we just add a 0 to the end of our A
 H = [2.50 0.93 0.62 0.74 -0.23 0;
     0.93 1.50 0.22 0.56 0.26 0;
