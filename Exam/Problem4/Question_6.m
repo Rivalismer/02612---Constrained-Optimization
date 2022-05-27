@@ -1,4 +1,4 @@
-clear all, close all, clc
+clear all; close all; clc;
 % This program is investigating optimization of Himmelblau problem with use 
 % of damped BFGS Lagrangian approximation method.
 
