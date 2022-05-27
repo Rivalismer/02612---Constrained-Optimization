@@ -31,5 +31,8 @@ hold on
     ylim([-5,5]);
     pl1 = plot(stats_s1.x(1, :), stats_s1.x(2, :), 'r', 'Linewidth', 2);
     pl2 = plot(stats_s2.x(1, :), stats_s2.x(2, :), 'm', 'Linewidth', 2);
-    pl3 = plot(stats_s3.x(1, :), stats_s3.x(2, :), 'b', 'Linewidth', 2);
-    legend({'', '', '', 'x_0 = [1  2]''', 'x_0 = [-3  0.75]''', 'x_0 = [5  5]'''}, 'location', 'south');
+    pl3 = plot(stats_s3.x(1, :), stats_s3.x(2, :), 'g', 'Linewidth', 2);
+    legend({'', '', 'x_0 = [1 2]''', 'x_0 = [-3 0.75]''', 'x_0 = [4.5 4]'''}, 'location', 'south');
+
+
+

@@ -1,4 +1,18 @@
 function [x, stats] = SQP_BFGS(objective, const, x0, lambda0)
+%{
+    This function is designed to solve nonlinear programming minimization 
+    problems wrt. x vector in form of:
+
+    min f(x)
+
+    s.t      = gl <= g(x) <= gu
+               xl <=  x   <= xu
+    
+    Output:
+            -- x         - reached optimal value of x
+            -- stats     - struct with iterations number, number of
+                           function calls and iteration sequence
+%}
 
 % Solver settings and info
 maxit = 100*length(x0);
@@ -54,7 +68,7 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
         theta = (0.8*p'*B*p)/(p'*B*p-p'*q);
     end
     r = theta*q+(1-theta)*B*p;
-    B = B + (r*r')/(p'*r) - (B*p)*(B*p)'/(p'*B*p)
+    B = B + (r*r')/(p'*r) - (B*p)*(B*p)'/(p'*B*p);
     
     dL = dLnew;
     F = [dL; c];

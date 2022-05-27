@@ -1,6 +1,6 @@
 clear all, close all, clc
 % This program is investigating optimization of Himmelblau problem with use 
-% of damped BFGS Lagrangian approximation method.
+% of damped BFGS Lagrangian with backtracking line search approximation method.
 
 % initial guesses
 x01 = [1;2];
@@ -9,9 +9,9 @@ x03 = [5;5];
 lambda0 = 0.2*ones(6, 1);
 
 % Calculating minimizers
-[x_s1, stats_s1] = SQP_BFGS(@himmelblau, @himmel_const, x01, lambda0);
-[x_s2, stats_s2] = SQP_BFGS(@himmelblau, @himmel_const, x02, lambda0);
-[x_s3, stats_s3] = SQP_BFGS(@himmelblau, @himmel_const, x03, lambda0);
+[x_s1, stats_s1] = SQP_BFGS_LineSearch(@himmelblau, @himmel_const, x01, lambda0);
+[x_s2, stats_s2] = SQP_BFGS_LineSearch(@himmelblau, @himmel_const, x02, lambda0);
+[x_s3, stats_s3] = SQP_BFGS_Line(@himmelblau, @himmel_const, x03, lambda0);
 
 x=-5:0.05:5;
 [X,Y]=meshgrid(x);
