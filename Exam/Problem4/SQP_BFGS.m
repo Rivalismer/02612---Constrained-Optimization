@@ -19,7 +19,6 @@ it = 0;
 [~, df] = objective(x);
 [c, dc] = const(x); 
 fcall = 1;
-ncons = length(c);
 
 % Optimality conditions matrix
 dL = df - dc*lambda;
@@ -30,7 +29,6 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
     it = it + 1;
     
     % Solving quadratic sub-problem
-    %[sols, ~, ~,  = [B -dc; dc' zeros(ncons)]\[-dL; -c];
     [sols, ~, ~, ~, lambda_qp] = quadprog(B, df, -dc', c, [], [], [], [], [], options);
     % Iteration step 
     x = x + sols(1:n);
