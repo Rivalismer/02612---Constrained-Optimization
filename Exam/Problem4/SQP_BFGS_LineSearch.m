@@ -16,10 +16,9 @@ B = eye(n);
 it = 0;
 
 % Evaluating function and constraints
-[~, df] = objective(x);
+[f, df] = objective(x);
 [c, dc] = const(x); 
 fcall = 1;
-ncons = length(c);
 
 % Optimality conditions matrix
 dL = df - dc*lambda;
@@ -30,17 +29,37 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
     it = it + 1;
     
     % Solving quadratic sub-problem
-    %[sols, ~, ~,  = [B -dc; dc' zeros(ncons)]\[-dL; -c];
     [sols, ~, ~, ~, lambda_qp] = quadprog(B, df, -dc', c, [], [], [], [], [], options);
-    % Iteration step 
-    x = x + sols(1:n);
-    lambda = lambda_qp.ineqlin;
+    
+    % Backtracking line search
+    plambda = lambda_qp.ineqlin - lambda;
+    alpha = 1;
+    pk = sols(1:n);
+    rho = 0.25;                             % has to be in (0,1)
+    tau = 0.8;                              % has to be in (0,1)
+    eta = 0.25;                             % has to be in (0,1)
+    mu = (df'*pk+0.5*pk'*B*pk)/((1-rho)*norm(c, 1));
+    % Function initialization for conditions check
+    f_ls = objective(x+alpha*pk); 
+    fcall = fcall + 1;
+    c_ls = const(x+alpha*pk);
+    % Checking 
+    while f_ls + mu*norm(c_ls, 1) > f + mu*norm(c,1) + eta*alpha*(df'*pk-mu*norm(c,1))
+       % Updating alpha parameter
+       alpha = tau*alpha; 
+       f_ls = objective(x+alpha*pk);
+       c_ls = const(x+alpha*pk);
+    end
+    
+    % Updating iterates
+    x = x + alpha*pk;
+    lambda = lambda + alpha*plambda;
     
     % Saving x
     stats.x(:, it+1) = x;
     
     % Evaluating function on updated parameters
-    [~, df] = objective(x);
+    [f, df] = objective(x);
     [c, dc] = const(x);
     fcall = fcall + 1;
     
@@ -56,7 +75,7 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
         theta = (0.8*p'*B*p)/(p'*B*p-p'*q);
     end
     r = theta*q+(1-theta)*B*p;
-    B = B + (r*r')/(p'*r) - (B*p)*(B*p)'/(p'*B*p)
+    B = B + (r*r')/(p'*r) - (B*p)*(B*p)'/(p'*B*p);
     
     dL = dLnew;
     F = [dL; c];
