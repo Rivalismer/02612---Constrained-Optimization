@@ -232,8 +232,8 @@ hold on
     fill([x x(end) x(1)],[yc2 -5 -5],[0.7 0.7 0.7],'facealpha',0.4);
     xlim([-5,5]);
     ylim([-5,5]);
-    pl1 = scatter(stats_s1.x(1, :), stats_s1.x(2, :), 'r', 'filled');
-    pl2 = scatter(stats_s2.x(1, :), stats_s2.x(2, :), 'm', 'filled');
-    pl3 = scatter(stats_s3.x(1, :), stats_s3.x(2, :), 'b', 'filled');
+    pl1 = plot(stats_s1.x(1, :), stats_s1.x(2, :), 'r', 'Linewidth', 2);
+    pl2 = plot(stats_s2.x(1, :), stats_s2.x(2, :), 'm', 'Linewidth', 2);
+    pl3 = plot(stats_s3.x(1, :), stats_s3.x(2, :), 'b', 'Linewidth', 2);
     legend({'', '', '', 'x_0 = [1  2]''', 'x_0 = [-3  0.75]''', 'x_0 = [5  5]'''}, 'location', 'south');
 hold off
