@@ -1,5 +1,5 @@
 function [f, df, d2f]=himmelblau(x)
-% This function is calculating function value, gradiend and Hessian of
+% This function is calculating function value, gradient and Hessian of
 % Himmelblau problem, given x
 
 f = (x(1)^2+x(2)-11)^2+(x(1)+x(2)^2-7)^2;

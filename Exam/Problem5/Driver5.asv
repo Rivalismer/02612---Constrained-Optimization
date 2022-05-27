@@ -600,7 +600,7 @@ for i = Rmin:0.001:max(A)
     beq = [1; i];
     [x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
     is(cnt) = i;
-    fs(cnt) = 2*fval;
+    fs(cnt) = 2fval;
     xs(cnt, :) = x;
     cnt = cnt + 1;
 end
@@ -680,7 +680,7 @@ for i = Rmin:0.001:max(A)
     beq = [1; i];
     [x,fval,exitflag,output,lambda] = quadprog(H,f,[],[],Aeq,beq,lb,ub,[],options);
     is(cnt) = i;
-    fs(cnt) = 2*fval;
+    fs(cnt) = fval;
     xs(cnt, :) = x;
     cnt = cnt + 1;
 end
