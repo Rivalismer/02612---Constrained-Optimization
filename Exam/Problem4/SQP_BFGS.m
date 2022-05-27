@@ -44,6 +44,7 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
     
     % Solving quadratic sub-problem
     [sols, ~, ~, ~, lambda_qp] = quadprog(B, df, -dc', c, [], [], [], [], [], options);
+
     % Iteration step 
     x = x + sols(1:n);
     lambda = lambda_qp.ineqlin;

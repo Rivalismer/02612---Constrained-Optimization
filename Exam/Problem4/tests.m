@@ -79,7 +79,7 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
         theta = (0.8*p'*B*p)/(p'*B*p-p'*q);
     end
     r = theta*q+(1-theta)*B*p;
-    B = B + (r*r')/(p'*r) - (B*p)*(B*p)'/(p'*B*p)
+    B = B + (r*r')/(p'*r) - (B*p)*(B*p)'/(p'*B*p);
     
     dL = dLnew;
     F = [dL; c];
