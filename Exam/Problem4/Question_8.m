@@ -1,6 +1,6 @@
 clear all, close all, clc
 % This program is investigating optimization of Himmelblau problem with use 
-% of damped BFGS Lagrangian approximation method.
+% of trust region with BFGS hessian aproximation method.
 
 % initial guesses
 x01 = [1;2];
@@ -9,9 +9,9 @@ x03 = [5;5];
 lambda0 = 0.2*ones(6, 1);
 
 % Calculating minimizers
-[x_s1, stats_s1] = SQP_BFGS(@himmelblau, @himmel_const, x01, lambda0);
-[x_s2, stats_s2] = SQP_BFGS(@himmelblau, @himmel_const, x02, lambda0);
-[x_s3, stats_s3] = SQP_BFGS(@himmelblau, @himmel_const, x03, lambda0);
+[x_s1, stats_s1] = SQP_BFGS_LineSearch(@himmelblau, @himmel_const, x01, lambda0);
+[x_s2, stats_s2] = SQP_BFGS_LineSearch(@himmelblau, @himmel_const, x02, lambda0);
+[x_s3, stats_s3] = SQP_BFGS_LineSearch(@himmelblau, @himmel_const, x03, lambda0);
 
 x=-5:0.05:5;
 [X,Y]=meshgrid(x);
@@ -31,8 +31,5 @@ hold on
     ylim([-5,5]);
     pl1 = plot(stats_s1.x(1, :), stats_s1.x(2, :), 'r', 'Linewidth', 2);
     pl2 = plot(stats_s2.x(1, :), stats_s2.x(2, :), 'm', 'Linewidth', 2);
-    pl3 = plot(stats_s3.x(1, :), stats_s3.x(2, :), 'g', 'Linewidth', 2);
-    legend({'', '', 'x_0 = [1 2]''', 'x_0 = [-3 0.75]''', 'x_0 = [4.5 4]'''}, 'location', 'south');
-
-
-
+    pl3 = plot(stats_s3.x(1, :), stats_s3.x(2, :), 'b', 'Linewidth', 2);
+    legend({'', '', '', 'x_0 = [1  2]''', 'x_0 = [-3  0.75]''', 'x_0 = [5  5]'''}, 'location', 'south');
