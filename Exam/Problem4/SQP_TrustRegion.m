@@ -5,7 +5,7 @@ function [x, stats] = SQP_TrustRegion(objective, const, x0, lambda0)
 
     min f(x)
 
-    s.t      = gl <= g(x) <= gu
+    s.t        gl <= g(x) <= gu
                xl <=  x   <= xu
     
     Output:
