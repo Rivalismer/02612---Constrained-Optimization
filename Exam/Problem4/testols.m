@@ -1,18 +1,8 @@
-function [x, stats] = SQP_TrustRegion(objective, const, x0, lambda0)
-%{
-    This function is designed to solve nonlinear programming minimization 
-    problems wrt. x vector in form of:
-
-    min f(x)
-
-    s.t      = gl <= g(x) <= gu
-               xl <=  x   <= xu
-    
-    Output:
-            -- x         - reached optimal value of x
-            -- stats     - struct with iterations number, number of
-                           function calls and iteration sequence
-%}
+clear all, clc, close all
+objective = @himmelblau;
+const = @himmel_const;
+x0 = [1; 2];
+lambda0 = [0.2; 0.2; 0.2; 0.2; 0.2; 0.2];
 
 % Solver settings and info
 maxit = 100*length(x0);
@@ -29,10 +19,11 @@ lambda = lambda0;
 B = eye(n);
 it = 0;
 mu = 20;     % penalty value
-tr = 1;      % initial trust region 
+tr = 10;    % initial trust region 
+stats.tr(1) = tr;
 
 % Evaluating function and constraints
-[~, df] = objective(x);
+[f, df] = objective(x);
 [c, dc] = const(x); 
 nc = length(c);
 fcall = 1;
@@ -46,11 +37,15 @@ Bhat = [B, zeros(n, nc); zeros(nc, n), zeros(nc)];
 g = [df; mu*ones(nc, 1)];
 dc = [dc', zeros(nc)];
 
-l = [-tr*ones(n, 1); ones(nc, 1)];
-u = [tr*ones(n, 1); inf*ones(nc, 1)];
+
 while ((it < maxit) && (norm(F(1:n),'inf') > tol))
     
     it = it + 1;
+    stats.tr(it+1) = tr;
+    
+    % Trust region constraints
+    l = [-tr*ones(n, 1); ones(nc, 1)];
+    u = [tr*ones(n, 1); inf*ones(nc, 1)];
     
     % Solving quadratic sub-problem
     [sols, ~, ~, ~, lambda_qp] = quadprog(Bhat, g, -dc, c, [], [], l, u, [], options);
@@ -62,17 +57,42 @@ while ((it < maxit) && (norm(F(1:n),'inf') > tol))
     % Saving x
     stats.x(:, it+1) = x;
     
+    fold = f;
+    dfold = df;
     % Evaluating function on updated parameters
-    [~, df] = objective(x);
+    [f, df] = objective(x);
     [c, dc] = const(x);
     fcall = fcall + 1;
+    
+    % Update trust region
+    p = sols(1:n);
+    if p==zeros(n, 1)
+        rho = 1
+    else
+        rho = (f-fold)/(0.5*p'*B*p+dfold'*p);
+    end
+    if rho <0.25
+        corr = 0.25;
+    else
+        if rho <=0.75
+            corr = 1;
+        else
+            corr = 2;
+        end
+    end
+    if rho < 0 
+        tr = corr*norm(p, inf);
+    else
+        tr = corr*tr;
+    end
+    
     
     % new Lagrangian gradient for BFGS check
     dLnew = df - dc*lambda;
     
     % NEW MATRICES FOR TRUST REGION
     g = [df; mu*ones(nc, 1)];
-    dc = [dc', zeros(nc)];
+    dc = [dc', eye(nc)];
     
     % BFGS update
     p = x - stats.x(:, it);

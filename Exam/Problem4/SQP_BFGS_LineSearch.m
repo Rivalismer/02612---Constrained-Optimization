@@ -17,15 +17,12 @@ function [x, stats] = SQP_BFGS_LineSearch(objective, const, x0, lambda0)
 % Solver settings and info
 maxit = 100*length(x0);
 tol   = 1.0e-5;
-<<<<<<< HEAD
+%options = optimoptions('quadprog','Algorithm','active-set','Display', 'none');
 options = optimoptions('quadprog', 'Display', 'none');
 % For backtracking line search
 rho = 0.25;              % has to be in (0,1)
 tau = 0.8;               % has to be in (0,1)
 eta = 0.1;               % has to be in (0,1), set to 0.1 as in lecture slides
-=======
-options = optimoptions('quadprog','Algorithm','active-set', 'Display', 'none');
->>>>>>> 7938deb4d1234828a4db472f810307e9f0eb638e
 
 % Initializing statistics         
 stats.x(:, 1) = x0;
@@ -36,7 +33,6 @@ n = length(x);
 lambda = lambda0;
 B = eye(n);
 it = 0;
-p = ones(length(x),1);
 
 % Evaluating function and constraints
 [f, df] = objective(x);
@@ -52,7 +48,7 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
     it = it + 1;
     
     % Solving quadratic sub-problem
-    [sols, ~, ~, ~, lambda_qp] = quadprog(B, df, -dc', c, [], [], [], [], p, options);
+    [sols, ~, ~, ~, lambda_qp] = quadprog(B, df, -dc', c, [], [], [], [], zeros(n, 1), options);
     
     % Backtracking line search
     plambda = lambda_qp.ineqlin - lambda;
