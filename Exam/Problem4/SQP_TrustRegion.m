@@ -28,22 +28,32 @@ n = length(x);
 lambda = lambda0;
 B = eye(n);
 it = 0;
+mu = 20;     % penalty value
+tr = 1;    % initial trust region 
 
 % Evaluating function and constraints
 [~, df] = objective(x);
 [c, dc] = const(x); 
+nc = length(c);
 fcall = 1;
 
 % Optimality conditions matrix
 dL = df - dc*lambda;
 F = [dL; c];
 
-while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
+% Creating trust region B ang df matrices and constraints
+Bhat = [B, zeros(n, nc); zeros(nc, n), zeros(nc)];
+g = [df; mu*ones(nc, 1)];
+dc = [dc', eye(nc)];
+
+l = [-tr*ones(n, 1); ones(nc, 1)];
+u = [tr*ones(n, 1); inf*ones(nc, 1)];
+while ((it < maxit) && (norm(F(1:n),'inf') > tol))
     
     it = it + 1;
     
     % Solving quadratic sub-problem
-    [sols, ~, ~, ~, lambda_qp] = quadprog(B, df, -dc', c, [], [], [], [], [], options);
+    [sols, ~, ~, ~, lambda_qp] = quadprog(Bhat, g, -dc, c, [], [], l, u, [], options);
 
     % Iteration step 
     x = x + sols(1:n);
@@ -60,6 +70,10 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
     % new Lagrangian gradient for BFGS check
     dLnew = df - dc*lambda;
     
+    % NEW MATRICES FOR TRUST REGION
+    g = [df; mu*ones(nc, 1)];
+    dc = [dc', eye(nc)];
+    
     % BFGS update
     p = x - stats.x(:, it);
     q = dLnew - dL;
@@ -71,6 +85,8 @@ while ((it < maxit) && (norm(F(1:length(x)),'inf') > tol))
     r = theta*q+(1-theta)*B*p;
     B = B + (r*r')/(p'*r) - (B*p)*(B*p)'/(p'*B*p);
     
+    % Updating iterate
+    Bhat = [B, zeros(n, nc); zeros(nc, n), zeros(nc)];
     dL = dLnew;
     F = [dL; c];
 end
