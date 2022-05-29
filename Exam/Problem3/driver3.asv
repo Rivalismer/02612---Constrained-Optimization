@@ -111,12 +111,15 @@ for i=1:4
         [x_opt, iter, converged] = PrimalDualInteriorPoint(test.x0(i,:)', mu0, lambda0, g, A, b, l, u);
         test.cputime(i) = toc;
         test.iter(i) = iter;
-        test.xopt(i,:) = x_opt';
         if converged
             disp('Algorithm converged to minimizer:')
         else
-            disp('No convergence was obtained.')
+            disp('No convergence was obtained.\n')
         end
+        disp(x_opt)
+        disp('Performance statistics:')
+        fprintf('Number of iterations: %i \n', iter)
+        fprintf('Computation time: %f seconds\n', cputime)
     catch
         fprintf('Could not compute for i = %d\n', i);
     end
@@ -233,3 +236,75 @@ for i = [1,2]
     stats.iter(i, :) = [iter_pdip, stats_lp.iterations];  % iterations number 
     stats.cpu(i, :) = [cputime_pdip, cputime_lp]; % cpu time - for cvx read from console
 end
+
+%% Plotting
+figure(1);
+scatter(bs, stats.opt_val, 30, 'filled');
+title('Optimal objective function value');
+xlabel('b(1) value');
+ylabel('Optimal value');
+set(gca, "FontSize", 12);
+
+figure(2);
+scatter(bs, vecnorm(stats.x_gb), 30, 'filled');
+title('L-2 norm of reached minimizer');
+xlabel('b(1) value');
+ylabel('x_o_p_t norm');
+set(gca, "FontSize", 12);
+
+figure(3);
+hold on;
+scatter(bs, stats.cpu(:, 1), 30, 'r', 'filled');
+scatter(bs, stats.cpu(:, 2), 30, 'm', 'filled');
+scatter(bs, stats.cpu(:, 3), 30, 'g', 'filled');
+title('Computation time for all methods');
+xlabel('b(1) value');
+ylabel('Time (s)');
+set(gca, "FontSize", 12);
+legend({'primal-dual','quadprog', 'gurobi'}, 'Location', 'best');
+hold off;
+
+figure(4);
+hold on;
+scatter(bs, stats.iter(:, 1), 30, 'filled');
+scatter(bs, stats.iter(:, 2), 30, 'filled');
+title('Number of iterations for selected methods');
+xlabel('b(1) value');
+ylabel('Iterations number');
+set(gca, "FontSize", 12);
+legend({'primal-dual','quadprog'}, 'Location', 'best')
+hold off;
+
+% Plotting separately all x dimensions
+figure(5);
+hold on;
+% x1
+subplot(2, 6, [1,2]);
+plot(bs, stats.x_qp(1, :));
+title('x_1');
+xlabel('b(1)');
+ylabel('x_1');
+% x2
+subplot(2, 6, [3,4]);
+plot(bs, stats.x_qp(2, :));
+title('x_2');
+xlabel('b(1)');
+ylabel('x_2');
+% x3
+subplot(2, 6, [5,6]);
+plot(bs, stats.x_qp(3, :));
+title('x_3');
+xlabel('b(1)');
+ylabel('x_3');
+% x4
+subplot(2, 6, [8,9]);
+plot(bs, stats.x_qp(4, :));
+title('x_4');
+xlabel('b(1)');
+ylabel('x_4');
+% x5
+subplot(2, 6, [10,11]);
+plot(bs, stats.x_qp(5, :));
+title('x_5');
+xlabel('b(1)');
+ylabel('x_5');

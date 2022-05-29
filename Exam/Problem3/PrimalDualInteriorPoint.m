@@ -1,4 +1,4 @@
-function [x_opt, iter, converged] = PrimalDualInteriorPoint2(x0, mu0, lambda0, g, A, b, l, u)
+function [x_opt, iter, converged] = PrimalDualInteriorPoint(x0, mu0, lambda0, g, A, b, l, u)
 %{
     This function is designed to solve linear programming minimization 
     problems wrt. x vector in form of:
@@ -49,13 +49,6 @@ LAMBDA = diag(lambda);
 e = ones(length(x), 1);
 n = length(x);
 lm = length(mu);
-
-% Computing initial residuals
-rL = g - A'*mu - lambda;
-rA = A*x - b;
-rXL = X*LAMBDA*e;
-s = x'*lambda/n;
-
 %% Stopping criteria 
 
 % Residuals estimation
